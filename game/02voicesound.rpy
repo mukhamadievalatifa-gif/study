@@ -1,7 +1,7 @@
 init python:
     # Dedicated channel so typewriter beeps don't cut off "sound" effects (e.g. alarm).
     try:
-        renpy.music.register_channel("typewriter", "sfx", loop=False, tight=True)
+        renpy.music.register_channel("typewriter", "voice", loop=False, tight=True)
     except Exception:
         pass
 

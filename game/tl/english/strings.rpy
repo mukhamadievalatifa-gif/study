@@ -34,3 +34,17 @@ translate english strings:
 
     old "что мне делать сейчас?"
     new "What should I do now?"
+
+    old "Лиам"
+    new "Liam"
+
+    old "Рафаэль"
+    new "Raphael"
+
+    old "Зефир"
+    new "Zephyr"
+
+    old "Дядя"
+    new "Uncle"
+
+    

@@ -35,8 +35,8 @@ translate english strings:
     new "Options"
 
     # game/screens.rpy:303
-    old "Начать"
-    new "Start"
+    old "Новая игра"
+    new "New game"
 
     # game/screens.rpy:311
     old "Загрузить"
@@ -329,4 +329,28 @@ translate english strings:
     # game/screens.rpy:1570
     old "Меню"
     new "Menu"
+
+# TODO: Translation updated at 2026-03-18 05:36
+
+translate english strings:
+
+    # game/screens.rpy:337
+    old "Загр/Сохр"
+    new "Load/Save"
+
+    # game/screens.rpy:343
+    old "Музыка"
+    new "Music room"
+
+    # game/screens.rpy:635
+    old "Сохранить/Загрузить"
+    new "Save/Load"
+
+    # game/screens.rpy:743
+    old "%d.%m.%Y, %H:%M"
+    new "%d.%m.%Y, %H:%M"
+
+    # game/screens.rpy:778
+    old "Удалить"
+    new "Delate"
 

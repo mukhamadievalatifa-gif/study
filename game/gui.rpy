@@ -2,6 +2,17 @@
 ## Инициализация
 ################################################################################
 
+## Определение переменных для пользовательского интерфейса
+default persistent.locked = []
+default persistent.menu_stage = 0
+default persistent.story_stage = 0
+
+## Инициализация для функции блокировки сохранений
+init -1 python hide:
+
+    if persistent.locked is None:
+        persistent.locked = []
+
 ## Оператор init offset повышает приоритет инициализации в этом файле над
 ## другими файлами, из-за чего инициализация здесь запускается первее.
 init offset = -2
@@ -10,6 +21,21 @@ init offset = -2
 ## значениям, и задать высоту и ширину окна игры.
 init python:
     gui.init(2560, 1440)
+
+init 1 python:
+    # Проверка и установка persistent переменных
+    if persistent.story_stage is None:
+        persistent.story_stage = 0
+    if persistent.menu_stage is None:
+        persistent.menu_stage = 0
+    
+    # Установка фона главного меню на основе persistent переменных
+    if persistent.story_stage == 1:
+        gui.main_menu_background = "gui/menu2.png"
+    elif persistent.menu_stage == 2:
+        gui.main_menu_background = "gui/menu1.png"
+    elif persistent.menu_stage == 0:
+        gui.main_menu_background = Movie(play="gui/1977671813842.webm")
 
 ## Включить проверку на недопустимые или нестабильные свойства в экранах или
 ## преобразованиях
@@ -89,7 +115,6 @@ define gui.title_text_size = 100
 ## Главное и игровое меню. #####################################################
 
 ## Изображения, используемые в главном и игровом меню.
-define gui.main_menu_background = "gui/menu3.png"
 define gui.game_menu_background = "gui/menu2.png"
 
 
@@ -445,12 +470,12 @@ init python:
     def small():
 
         ## Размеры шрифтов.
-        gui.text_size = 45
-        gui.name_text_size = 72
-        gui.notify_text_size = 50
-        gui.interface_text_size = 40
-        gui.button_text_size = 60
-        gui.label_text_size = 68
+        gui.text_size = 44
+        gui.name_text_size = 70
+        gui.notify_text_size = 46
+        gui.interface_text_size = 36
+        gui.button_text_size = 50
+        gui.label_text_size = 58
 
         ## Регулирует местоположение текстового окна.
         gui.textbox_height = 360
@@ -463,7 +488,7 @@ init python:
         gui.slider_size = 72
 
         gui.choice_button_width = 2480
-        gui.choice_button_text_size = 60
+        gui.choice_button_text_size = 42
 
         gui.navigation_spacing = 20
         gui.pref_button_spacing = 20

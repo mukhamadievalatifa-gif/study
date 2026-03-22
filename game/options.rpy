@@ -57,7 +57,7 @@ define config.has_voice = True
 ## каналах, раскомментируйте строчку и настройте пример звука для прослушивания.
 
 define config.sample_sound = "sounds/click.mp3"
-# define config.sample_voice = "sample-voice.ogg"
+define config.sample_voice = "sounds/gg.mp3"
 
 
 ## Раскомментируйте следующую строчку, чтобы настроить аудиофайл, который будет

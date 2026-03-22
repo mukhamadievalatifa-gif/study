@@ -16,6 +16,12 @@ label splashscreen:
     pause 0.5
     $ renpy.movie_cutscene("video/di.webm")
     return
+
+
+# Обработчик загрузки сохранения
+label after_load:
+    $ restore_player_music()
+    return
    
 
 screen start_game_icon():
@@ -52,8 +58,10 @@ screen start_game_icon():
 default have_played_nes = False
 
 label start:
-    stop music fadeout 1.0
-    play music mystic fadein 3.0 volume 0.35
+    $ progress = 1
+    $ lock_music_change()
+    $ story_stop_music(fadeout=1.0)
+    $ story_play_music(audio.mystic, fadein=3.0, volume=0.35)
     scene bg night
     $ persistent.cg_1 = True
     show gg backa:
@@ -86,7 +94,8 @@ label start:
     stop sound 
     play audio click
     gg emberasseda "Фуф... Это был всего лишь сон. Но он был таким реалистичным..."
-    stop music fadeout 2.0
+    $ story_stop_music(fadeout=2.0)
+    $ unlock_music_change()
     gg "Не стоило кушать лапшу перед сном"
     gg "Ладно уж. Пора вставать"
     
@@ -99,7 +108,7 @@ label start:
     call nes_start from _call_nes_start
 
     gg "Пора в школу."
-    play music normal fadein 3.0 volume 0.35
+    $ story_play_music(audio.normal, fadein=3.0, volume=0.35)
     jump street
 
 label play_hiddenfolks:
@@ -258,7 +267,7 @@ label street:
     an smilea "Это не случайно. Ты избран, поздравляю."
     gg "Ого. Ну, круто. А приз — хотя бы бесплатный обед в столовой?"
     an angrya "…"
-    play sound meme_spiderman volume 0.5
+    play sound "sounds/meme_spiderman.mp3" volume 0.5
     an angrya "Ты будешь решать судьбы людей"
     gg argue baga """Ч-чего?!
     А нельзя сразу отказаться?"""
@@ -331,7 +340,7 @@ label zephir:
     n """Новый день
 
     Лиам опять шёл по школе что-то обсуждая с Рафаэлем, когда вдруг послышался голос"""
-
+    $ persistent.story_stage = 1
     ld "Лиам?"
 
     n "Они оборачиваются и видят Зефира-лучшего друга Лиама. Парень приятной мягкой внешности с улыбкой."
@@ -352,7 +361,10 @@ label zephir:
     nvl clear
     scene bg room night
     sc "Уставший Лиам возвращается домой и почти сразу засыпает."
+    $ lock_music_change()
+    $ story_stop_music(fadeout=2.0)
     sc "Но ночью ему снится сон."
+    $ story_play_music("music/firstdream.mp3", fadein=1.0)
     scene bg black with eyes_blink
     pause 1.0
     n "Темнота. Душно."
@@ -361,11 +373,15 @@ label zephir:
     $ persistent.cg_9 = True
     gg shocked baga "Зефир?"
     scene bg zephir cry 2 with dissolve
-    pause 
+    pause 1.5
+    play sound "sounds/footsteps.mp3" fadein 1.0 volume 0.5
     ld scareda "Помоги. Я… я боюсь.."
+    
+    pause 1.0
     scene bg zephir cry 3 with dissolve
     $ persistent.cg_10 = True
     pause 1.0
+    stop sound 
     scene bg room night with fade
     $ persistent.cg_roomnight = True
     n "Лиам резко просыпается, тяжело дыша."
@@ -393,8 +409,14 @@ label zephir:
     
     Зефир? Как? Нет… но….
     '''
+    $ unlock_music_change()
+
+    $ story_stop_music(fadeout=2.0)
     an "Постепенно ты всё узнаешь"
+    
     scene school tree with dissolve
+    
+    $ story_play_music("music/Crescent-Moon(chosic.com).mp3", fadein=2.0)
     window hide
     nvl clear
     sc  '''В школе.
@@ -485,14 +507,97 @@ label home_1:
     В итоге среди ночи он выпивает снотворное и ложится в кровать.
     Рафаэль всё это время наблюдает за ним.
     Он слегка взмахивает рукой.
-    В воздухе появляются тихие искры света.
-    После этого он просто ждёт."""
+    В воздухе появляются тихие искры света."""
+    $ lock_music_change()
+    $ story_stop_music(fadeout=1.0)
+    sc "После этого он просто ждёт."
+
+    $ progress = 2
 
     scene bg black with fade
+    
+    $ story_play_music("music/Demented-Nightmare-MP3(chosic.com).mp3", fadein=2.0, volume=0.5)
     n """Сон Лиама
 
     Опять душно.
 
     Но на этот раз в темноте постепенно появляется свет…
     """
+    pause 1.0
+    scene bg zep1 with fade
+    pause 1.5
+    _("Женский голос") "Знаешь, Лиам, почему машина никогда не спорит с папой?"
+    n "Почему?"
+    _("Женский голос") "Потому что папа всё равно всегда “рулит”"
+    n "смех"
+    window hide
+    pause 1.5
+    _("Мужской голос") "Ради таких моментов, я готов даже быть водителем всю жизнь"
+    window hide
+    pause 1.5
+    scene bg black with eyes_blink
+    pause 1.0
+    scene bg zep2 with dissolve
+    pause 2.5
+    play sound "sounds/ambulance.mp3"
+    scene bg black with eyes_blink
+    pause 1.0
+    scene bg zep3 with dissolve
+    pause 0.5
+    stop sound fadeout 1.0
+    scene bg black with eyes_blink
+    play sound "sounds/hosp.mp3" volume 1.5
+    play audio "sounds/Heart-monitor-sound.mp3" volume 0.1 loop
+    pause 1.0
+    scene bg zep4 with dissolve
+    pause 1.0
+    show s1a:
+        xpos 1000
+        ypos 1
+    with dissolve
+    s1a "Эй, ты очнулся?"
+    s1a "Не двигайся, ладно? Всё хорошо. Ты в больнице."
+    n "А где мама? Папа?"
+    s1a "..."
+    pause 0.5
+    s1a "Прости, парень. Они... они не выжили."
+    pause 1.5
+    n "А я... когда поеду домой?"
+    n "*Следователь переглядывается с врачом, тяжело вздыхает и медленно садится на край стула.*"
+    s1a "Послушай, "
+    s1a "Пока… пока тебе не найдут опекуна, ты не сможешь вернуться домой."
+    n "Что это значит? "
+    s1a "Это значит, что ты поживёшь немного в одном доме, где живут дети, у которых тоже нет мамы и папы"
+    s1a "Это называется приют. Там за тобой будут смотреть взрослые, ты будешь ходить в школу, а мы будем искать для тебя семью."
+    n "*Слёзы*"
+    window hide
+    pause 1.5
+    scene bg black with eyes_blink
+    scene bg kinderg with fade
+    n "*дети играются вокруг*"
+    show s2sa:
+        xpos 1200
+        ypos 250
+    s2sa "У новенького тоже нет мамы и папы?"
+    hide s2sa
+    show s2a:
+        xpos 1200
+        ypos 250
+    s2a "Ой Ой. Тише. Тише. Так нельзя говорить. Мальчику сейчас итак грустно"
+    scene bg kinderg with fade
+    pause 1.5
+    show s1a:
+        xpos 1000
+        ypos 1
+    with dissolve
+    s1a "Эй, малыш, как ты?"
+    s1a "У нас хорошая новость"
+    s1a "Мы нашли тебе опекуна!"
+    s1a "И этот опекун твой родной дядя!"
+    s1a ""
+    s1a ""
+    s1a ""
+    
+    
+
     

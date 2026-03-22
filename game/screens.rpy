@@ -262,6 +262,32 @@ screen quick_menu():
 init python:
     config.overlay_screens.append("quick_menu")
 
+screen music_override_sync():
+    if (persistent.player_music_pending_apply
+            and allow_music_change
+            and not renpy.get_screen("game_menu")
+            and not renpy.get_screen("music_room")
+            and not renpy.get_screen("music_room2")
+            and not renpy.get_screen("music_room3")):
+        $ persistent.player_music_pending_apply = False
+        if persistent.player_music_track:
+            $ renpy.music.play(persistent.player_music_track, channel="music")
+
+init python:
+    if "music_override_sync" not in config.overlay_screens:
+        config.overlay_screens.append("music_override_sync")
+
+    # Функции для блокировки сохранений (из SaveLoad Overhaul)
+    def lockSave(slotname):
+        if persistent.locked is None:
+            persistent.locked = []
+        persistent.locked.append(slotname)
+
+    def unlockSave(slotname):
+        if persistent.locked is None:
+            persistent.locked = []
+        persistent.locked.remove(slotname)
+
 default quick_menu = True
 
 style quick_menu is hbox
@@ -300,19 +326,21 @@ screen navigation():
 
         if main_menu:
 
-            textbutton _("Начать") action Start()
+            textbutton _("Новая игра") action Start()
 
         else:
 
             textbutton _("История") action ShowMenu("history")
 
-            textbutton _("Сохранить") action ShowMenu("save")
+            # textbutton _("Сохранить") action ShowMenu("save")
 
-        textbutton _("Загрузить") action ShowMenu("load")
+        textbutton _("Загр/Сохр") action ShowMenu("load")
 
         textbutton _("Настройки") action ShowMenu("preferences")
 
         textbutton "Галерея" action ShowMenu("gallery_menu")
+
+        textbutton _("Музыка") action ShowMenu("music_room3", mr=music_room)
 
         if _in_replay:
 
@@ -419,7 +447,8 @@ style main_menu_version:
 ## экран предназначен для использования с одним или несколькими дочерними
 ## элементами, которые трансклюдируются (помещаются) внутрь него.
 
-screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
+screen game_menu(title, scroll=None, yinitial=0.0, spacing=0,
+        title_style="game_menu_label"):
 
     style_prefix "game_menu"
 
@@ -484,7 +513,7 @@ screen game_menu(title, scroll=None, yinitial=0.0, spacing=0):
 
         action Return()
 
-    label title
+    label title style title_style
 
     if main_menu:
         key "game_menu" action ShowMenu("main_menu")
@@ -595,9 +624,7 @@ style about_text:
 
 ## Экраны загрузки и сохранения ################################################
 ##
-## Эти экраны ответственны за возможность сохранять и загружать игру. Так
-## как они почти одинаковые, оба реализованы по правилам третьего экрана —
-## file_slots.
+## Объединённый экран сохранения и загрузки с кнопками Save/Load/Delete
 ##
 ## https://www.renpy.org/doc/html/screen_special.html#save 
 
@@ -605,30 +632,27 @@ screen save():
 
     tag menu
 
-    use file_slots(_("Сохранить"))
+    use file_picker(_("Сохранить/Загрузить"))
 
 
 screen load():
 
     tag menu
 
-    use file_slots(_("Загрузить"))
+    use file_picker(_("Сохранить/Загрузить"))
 
 
-screen file_slots(title):
+screen file_picker(title):
 
     default page_name_value = FilePageNameInputValue(pattern=_("{} страница"), auto=_("Автосохранения"), quick=_("Быстрые сохранения"))
 
     use game_menu(title):
-
         fixed:
 
-            ## Это гарантирует, что ввод будет принимать enter перед остальными
-            ## кнопками.
+            ## Это гарантирует, что ввод будет принимать enter перед остальными кнопками.
             order_reverse True
 
-            ## Номер страницы, который может быть изменён посредством клика на
-            ## кнопку.
+            ## Номер страницы, который может быть изменён посредством клика на кнопку.
             button:
                 style "page_label"
 
@@ -640,63 +664,54 @@ screen file_slots(title):
                     style "page_label_text"
                     value page_name_value
 
-            ## Таблица слотов.
-            grid gui.file_slot_cols gui.file_slot_rows:
-                style_prefix "slot"
+        # Сетка слотов с мини-панелью и кнопками
+        hbox:
+            xalign 0.5
+            yalign 0.5
+            $ columns = 2
+            $ rows = 3
 
-                xalign 0.5
-                yalign 0.5
+            # Отображение сетки слотов с информацией и кнопками
+            grid columns rows:
+                transpose True
+                style_group "file_picker"
 
-                spacing gui.slot_spacing
+                # Отображение слотов сохранений
+                for i in range(1, columns * rows + 1):
 
-                for i in range(gui.file_slot_cols * gui.file_slot_rows):
-
-                    $ slot = i + 1
-
+                    # Каждый слот сохранения - это кнопка
                     button:
-                        action FileAction(slot)
+                        action FileLoad(i)
+                        has hbox
+                        null width 5
+                        use file_info
+                        null width 4
+                        use file_butt
 
-                        has vbox
+        # Раздел навигации по страницам сохранений
+        frame:
+            style "file_picker_frame"
+            xalign 0.5 yalign 0.96
+            hbox:
+                style_group "file_picker_nav"
 
-                        add FileScreenshot(slot) xalign 0.5
+                spacing gui.page_spacing
 
-                        text FileTime(slot, format=_("{#file_time}%A, %d %B %Y, %H:%M"), empty=_("Пустой слот")):
-                            style "slot_time_text"
+                textbutton _("<") action FilePagePrevious()
+                key "save_page_prev" action FilePagePrevious()
 
-                        text FileSaveName(slot):
-                            style "slot_name_text"
+                if config.has_autosave:
+                    textbutton _("{#auto_page}А") action FilePage("auto")
 
-                        key "save_delete" action FileDelete(slot)
+                if config.has_quicksave:
+                    textbutton _("{#quick_page}Б") action FilePage("quick")
 
-            ## Кнопки для доступа к другим страницам.
-            vbox:
-                style_prefix "page"
+                ## range(1, 10) задаёт диапазон значений от 1 до 9.
+                for page in range(1, 10):
+                    textbutton "[page]" action FilePage(page)
 
-                xalign 0.5
-                yalign 1.0
-
-                hbox:
-                    xalign 0.5
-                    xfill True
-                    box_wrap True
-
-                    spacing gui.page_spacing
-
-                    textbutton _("<") action FilePagePrevious()
-                    key "save_page_prev" action FilePagePrevious()
-
-                    if config.has_autosave:
-                        textbutton _("{#auto_page}А") action FilePage("auto")
-
-                    if config.has_quicksave:
-                        textbutton _("{#quick_page}Б") action FilePage("quick")
-
-                    ## range(1, 10) задаёт диапазон значений от 1 до 9.
-                    for page in range(1, 10):
-                        textbutton "[page]" action FilePage(page)
-
-                    textbutton _(">") action FilePageNext()
-                    key "save_page_next" action FilePageNext()
+                textbutton _(">") action FilePageNext()
+                key "save_page_next" action FilePageNext()
 
                 if config.has_sync:
                     if CurrentScreenName() == "save":
@@ -707,6 +722,60 @@ screen file_slots(title):
                         textbutton _("Скачать Sync"):
                             action DownloadSync()
                             xalign 0.5
+
+
+# Экран с информацией о сохранении (скриншот и текст)
+screen file_info:
+
+    frame:
+        has vbox
+
+        xfill False
+        yfit True
+
+        # Добавляем скриншот
+        add FileScreenshot(i) xalign 0.5
+
+        # Получаем последнюю строку из сохранения
+        $ last_phrase = FileSaveName(i)
+
+        # Добавляем время сохранения
+        $ file_time = FileTime(i, format=_("%d.%m.%Y, %H:%M"), empty=_("Пустой слот"))
+
+        # Выводим время
+        text "[file_time]" size 18 xalign 0.5
+
+        null height 10
+
+        # Выводим имя сохранения
+        text "[last_phrase]" size 18 xalign 0.5
+
+
+# Экран с кнопками действий (Save, Load, Delete)
+screen file_butt:
+
+    frame:
+        has vbox
+        yalign 0.5
+        xalign 0.5
+        style_group "saveload"
+
+        # Получаем имя слота
+        $ file_name = FileSlotName(i, columns * rows)
+        $ file_time = FileTime(i, format=_("%d.%m.%Y, %H:%M"), empty=_("Пустой слот"))
+
+        text "Слот [file_name]" xalign 0.5
+
+        null height 10
+
+        # КНОПКА СОХРАНИТЬ
+        textbutton _("Сохранить") action FileSave(i, confirm=True, page=None) xalign 0.5
+
+        # КНОПКА ЗАГРУЗИТЬ
+        textbutton _("Загрузить") action FileLoad(i, confirm=True, page=None) xalign 0.5
+
+        # КНОПКА УДАЛИТЬ
+        textbutton _("Удалить") action FileDelete(i, confirm=True, page=None) xalign 0.5
 
 
 style page_label is gui_label
@@ -740,6 +809,46 @@ style slot_button:
 
 style slot_button_text:
     properties gui.text_properties("slot_button")
+
+# Новые стили для объединённого экрана сохранения/загрузки
+style saveload_button:
+    right_padding 15
+    left_padding 15
+    insensitive_background None
+    xalign 0.5
+    xmaximum 500
+
+style saveload_button_text:
+    size gui.interface_text_size
+    idle_color gui.idle_color
+    hover_color gui.hover_color
+    insensitive_color gui.insensitive_color
+
+style file_picker_button:
+    background Frame("gui/frame.png", 0, 0, tile=False)
+    hover_background Frame("gui/frame.png", 0, 0, tile=False)
+    selected_background Frame("gui/frame.png", 0, 0, tile=False)
+    selected_hover_background Frame("gui/frame.png", 0, 0, tile=False)
+
+style file_picker_frame:
+    background None
+
+style file_picker_nav_button_text:
+    left_margin 30
+    size 20
+    idle_color gui.idle_color
+    hover_color gui.hover_color
+    selected_color gui.selected_color
+    insensitive_color gui.insensitive_color
+    xalign 0.5
+
+style file_picker_nav_button:
+    background None
+    hover_background None
+    selected_background None
+    insensitive_background None
+    xpadding 10
+    xmargin 2
 
 
 ## Экран настроек ##############################################################
